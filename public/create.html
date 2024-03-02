@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+    <section id="primary">
+        <form action="/api/create#primary" target="htmz">
+            <h3>Create Compilation</h3>
+
+            <p>
+                <label for="channel">Channel</label>
+                <span>twitch.tv/</span><input for="channel" minlength="3" maxlength="25" name="channel" required></input>
+            </p>
+
+
+            <p>
+                <label for="count">Clip Count</label>
+                <input for="count" type="number" max="10" min="2" name="count" required></input>
+            </p>
+
+
+            <p>
+                <label for="method">Clip Selection Method</label>
+                <select name="method" required>
+                    <option name="popular" value="popular">Most Popular</option>
+                    <option name="random" value="random">Random</option>
+                </select>
+            </p>
+
+            <p>
+                <label for="range">Date range</label>
+                <select name="range" required>
+                    <option name="7" value="7">Past 7 Days</option>
+                    <option name="14" value="14">Past 14 Days</option>
+                    <option name="30" value="30">Past 30 Days</option>
+                    <option name="60" value="60">Past 60 Days</option>
+                    <option name="90" value="90">Past 90 Days</option>
+                </select>
+            </p>
+
+            <button>Create Compilation</button>
+        </form>
+    </section>
+</html>

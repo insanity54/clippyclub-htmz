@@ -1,0 +1,45 @@
+{
+  "name": "clippyclub-htmz",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test:combine": "node src/video.js combine ./assets/test-manifest.json",
+    "test": "mocha",
+    "dev": "concurrently \"npm:dev:worker\" \"npm:dev:web\"",
+    "dev:worker": "nodemon ./src/worker.js -w assets -w src -e json,js",
+    "dev:web": "nodemon ./src/web.js -w public -w src -e json,html,js"
+  },
+  "keywords": [],
+  "author": "@cj_clippy",
+  "license": "MIT",
+  "devDependencies": {
+    "chai": "^5.1.0",
+    "htmz": "^1.0.2",
+    "mocha": "^10.3.0",
+    "nodemon": "^3.1.0"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.4.3",
+    "cheerio": "1.0.0-rc.12",
+    "concurrently": "^8.2.2",
+    "date-fns": "^3.3.1",
+    "dotenv": "^16.4.5",
+    "editly": "^0.14.2",
+    "execa": "^8.0.1",
+    "express": "^4.18.2",
+    "ffprobe": "^1.1.2",
+    "fluent-ffmpeg": "^2.1.2",
+    "gl": "^6.0.2",
+    "luxon": "^3.4.4",
+    "twitch": "^4.6.7",
+    "twitch-auth": "^4.6.7",
+    "yargs": "^17.7.2",
+    "yt-dlp-wrap": "^2.3.12",
+    "zod": "^3.22.4"
+  },
+  "engines": {
+    "node": ">=16 <17"
+  }
+}
