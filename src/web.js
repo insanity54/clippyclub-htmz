@@ -5,9 +5,13 @@ import express from  'express'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import Database from 'better-sqlite3'
+import session from 'express-session'
+import sqliteSessionStore from 'better-sqlite3-session-store'
 import { dbPath } from './const.js'
 import { z } from 'zod';
 
+
+const SqliteStore = sqliteSessionStore(session)
 const db = new Database(dbPath);
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express()
@@ -22,29 +26,53 @@ const createCompilationSchema = z.object({
     range: z.number().min(1).max(365)
 });
 
+if (!process.env.EXPRESS_SESSION_SECRET) throw new Error('EXPRESS_SESSION_SECRET missing in env')
 
+const sesh = {
+    secret: process.env.EXPRESS_SESSION_SECRET,
+    resave: false,
+    cookie: {},
+    store: new SqliteStore({
+        client: db,
+        expired: {
+            clear: true,
+            intervalMs: 900000
+        }
+    })
+}
+if (app.get('env') === 'production') {
+    app.set('trust proxy', 1)
+    sesh.cookie.secure = true
+}
+
+
+app.use(express.static(join(__dirname, '../public')))
+app.use(session(sesh))
 
 app.get('/api/create', (req, res) => {
 
     try {
         
+        console.log(`a request was made and the sessionID is ${req.sessionID}`)
+
         const { channel, method } = req.query
         const count = parseInt(req.query.count)
         const range = parseInt(req.query.range)
         createCompilationSchema.parse({ channel, method, count, range })
 
         const insertStmt = db.prepare(`
-            INSERT INTO compilations (channel, count, method, range, status)
-            VALUES (@channel, @count, @method, @range, @status)
+            INSERT INTO compilations (channel, count, method, range, status, session)
+            VALUES (@channel, @count, @method, @range, @status, @session)
         `);
         insertStmt.run({
             channel,
             count,
             method,
             range,
-            status: 'pending'
+            status: 'pending',
+            session: req.sessionID
         });
-        
+
     
         res.redirect('/api/progress')
             
@@ -77,8 +105,11 @@ app.get('/api/create', (req, res) => {
 app.get('/api/progress', (req, res) => {
 
     
-    const compilations = db.prepare('SELECT * FROM compilations').all()
+    const compilations = db.prepare('SELECT * FROM compilations WHERE session = ?').all(req.sessionID)
 
+    // db
+    // .prepare("UPDATE compilations SET status = @status WHERE id = @id")
+    // .run({ id: job.id, status: 'downloading' });
 
     // console.log(compilations.length+' jobs as follows')
     // console.log(compilations)
@@ -95,6 +126,7 @@ app.get('/api/progress', (req, res) => {
     jFormat.push(`<th>method</th>`)
     jFormat.push(`<th>range</th>`)
     jFormat.push(`<th>status</th>`)
+    jFormat.push(`<th>url</th>`)
     jFormat.push('</tr>')
     for (const j of compilations) {
         jFormat.push('<tr>')
@@ -104,6 +136,7 @@ app.get('/api/progress', (req, res) => {
         jFormat.push(`<td>${j?.method}</td>`)
         jFormat.push(`<td>${j?.range}</td>`)
         jFormat.push(`<td>${j?.status}</td>`)
+        jFormat.push(`<td>${j?.url || ''}</td>`)
         jFormat.push('</tr>')
     }
     jFormat.push('</table>')
@@ -115,7 +148,6 @@ app.get('/api/progress', (req, res) => {
 })
 
 
-app.use(express.static(join(__dirname, '../public')))
 
 
 

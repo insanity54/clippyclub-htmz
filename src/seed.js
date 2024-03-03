@@ -18,7 +18,8 @@ async function main() {
             method TEXT,
             range INTEGER,
             status TEXT,
-            manifest TEXT
+            manifest TEXT,
+            session TEXT
         );
     `);
 

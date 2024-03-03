@@ -6,7 +6,7 @@ import ffprobe from 'ffprobe'
 import { statePath } from './const.js'
 import { join } from 'path'
 import { readFile } from 'fs/promises'
-
+import { tmpdir } from 'os'
 
 
 
@@ -121,9 +121,31 @@ function generateXfades(manifest, xDur = 0.2) {
     return xfades;
 }
 
+function generateAfades(manifest, aDur = 0.2) {
+    const afades = [];
+    let offset = 0;
+
+    for (let i = 0; i < manifest.length - 1; i++) {
+        const clipDuration = manifest[i].duration;
+        
+        offset += (clipDuration - aDur);
+        afades.push({
+            inputA: i === 0 ? 'a0' : `x${i - 1}`,
+            inputB: `a${i + 1}`,
+            curve1: 'tri',
+            curve2: 'tri',
+            duration: aDur,
+            offset: parseFloat(offset).toFixed(2),
+            output: i === manifest.length-2 ? 'audio' : `x${i}`
+        });
+    }
+
+    return afades;
+}
 
 
-function generateCrossfadeString(xfades) {
+
+function generateXfadeString(xfades) {
     return xfades.reduce((acc, curr, index) => {
         const { inputA, inputB, transition, duration, offset, output } = curr;
         const xfade = `[${inputA}][${inputB}]xfade=transition=${transition}:duration=${duration}:offset=${offset}[${output}];`;
@@ -131,8 +153,23 @@ function generateCrossfadeString(xfades) {
     }, '');
 }
 
+function generateAfadeString(afades) {
+    return afades.reduce((acc, curr, index) => {
+        const { inputA, inputB, duration, curve1, curve2, output } = curr;
+        const afade = `[${inputA}][${inputB}]acrossfade=duration=${duration}:curve1=${curve1}:curve2=${curve2}[${output}];`;
+        return acc + afade;
+    }, '');
+}
+
 export function getAudioFilterComplex(manifest) {
-    
+    let lines = []
+    // atrim
+    for (let i = 0; i<manifest.length; i++) {
+        lines.push(`[${i}]atrim=start=0:end=${manifest[i].duration}[a${i}];`)
+    }
+    const afades = generateAfades(manifest);
+    const filterComplex = generateAfadeString(afades)
+    return lines.join('').concat(filterComplex);
 }
 
 export function getVideoFilterComplex(manifest) {
@@ -146,7 +183,7 @@ export function getVideoFilterComplex(manifest) {
 
     const xfades = generateXfades(manifest);
 
-    const filterComplex = generateCrossfadeString(xfades)
+    const filterComplex = generateXfadeString(xfades)
 
 
     return lines.join('').concat(filterComplex);
@@ -199,9 +236,16 @@ export function getVideoFilterComplex(manifest) {
  */
 export async function combine(manifest, outputPath) {
 
+    const timestamp = new Date().valueOf()
+    const tmpVideoOutputPath = join(tmpdir(), `${timestamp}.mp4`)
+    const tmpAudioOutputPath = join(tmpdir(), `${timestamp}.wav`)
+
+    console.log(`video:${tmpVideoOutputPath}, audio:${tmpAudioOutputPath}`)
+
     console.log(manifest)
     // generate video
     // @reference https://romander.github.io/ffmpeg-script-generator/ 
+    console.log(`>> generate video`)
     await execa('ffmpeg', [
         // '-r', '60',
         ...manifest.flatMap((c) => ['-i', c.file]),
@@ -210,20 +254,31 @@ export async function combine(manifest, outputPath) {
         '-pix_fmt', 'yuv420p',
         '-b:v', '1M', // @todo just for testing, we use a low bitrate to keep the encode faster. in prod we must remove 
         '-map', '[video]',
-        outputPath
-    ], { stdio: 'inherit' })
+        tmpVideoOutputPath
+    ])
+    // ], { stdio: 'inherit' })
 
 
     // generate audio
+    console.log(`>> generate audio`)
     await execa('ffmpeg', [
         ...manifest.flatMap((c) => ['-i', c.file]),
-        '-filter_complex', getAudioFilterComplex(manifest)
+        '-filter_complex', getAudioFilterComplex(manifest),
         '-fps_mode:1', 'cfr', // keep framerate constant so we can merge audio + video in-sync
-
-    ])
+        '-map', '[audio]',
+        tmpAudioOutputPath
+    ], {stdio: 'inherit' })
 
     // merge video and audio
-    // @todo
+    console.log(`>> merge video with audio`)
+    await execa('ffmpeg', [
+        '-i', tmpVideoOutputPath,
+        '-i', tmpAudioOutputPath,
+        '-c:v', 'copy',
+        '-c:a', 'aac',
+        outputPath
+    ])
+    // ], {stdio: 'inherit' })
 }
 
 

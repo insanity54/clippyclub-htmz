@@ -1,14 +1,11 @@
 import 'dotenv/config'
 import Database from 'better-sqlite3'
 import { dbPath, statePath } from './const.js'
-import editly from 'editly'
-import { readFileSync } from 'fs'
 import { mkdir } from 'fs/promises'
-import { join, dirname } from 'path'
+import { dirname } from 'path'
 import { fileURLToPath } from 'url'
 import Download from './Download.js'
 import { sub } from 'date-fns'
-import { getEditlySpec, combineClips } from './render.js'
 import { NotEnoughClips, ChannelNotFound } from './errors.js'
 import { combine, getClipFilePath, getVideoProbe } from './video.js'
 
@@ -128,7 +125,9 @@ async function render(db, job) {
         console.log(console.log(`outputFileName=${outputFileName}`))
 
         await combine(manifest, outputFileName)
-        console.log(console.log(`outputFileName=${outputFileName}`))
+        console.log(console.log(`outputFileName:${outputFileName}`))
+
+
 
 
     } catch (e) {
@@ -139,9 +138,6 @@ async function render(db, job) {
 
 async function upload(db, job) {
     console.log(`uploading ${job.channel} compilation`);
-    console.log(`@todo upload`)
-    console.log(`@todo upload`)
-    console.log(`@todo upload`)
     console.log(`@todo upload`)
     db.prepare(`UPDATE compilations SET status = @status WHERE id = @id`)
         .run({
