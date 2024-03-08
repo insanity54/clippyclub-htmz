@@ -32,6 +32,7 @@ const sesh = {
     secret: process.env.EXPRESS_SESSION_SECRET,
     resave: false,
     cookie: {},
+    saveUninitialized: true,
     store: new SqliteStore({
         client: db,
         expired: {
@@ -80,7 +81,7 @@ app.get('/api/create', (req, res) => {
         if (error instanceof z.ZodError) {
             let h = []
             h.push('<!DOCTYPE html>')
-            h.push('<section id="primary">')
+            h.push('<section id="main">')
             h.push('<h4>Bad Request</h4>')
             h.push('<ul>')
             for (const e of JSON.parse(error.message)) {
@@ -95,11 +96,58 @@ app.get('/api/create', (req, res) => {
 
             res.status(400).send(h.join('\n'));
         } else {
-            res.status(500).send('<!DOCTYPE html><section id="primary">Internal Server Error</section></html>');
+            res.status(500).send('<!DOCTYPE html><section id="main">Internal Server Error</section></html>');
         }
     }
 
 
+})
+
+app.get('/api/account', (req, res) => {
+    const { sessionID } = req
+    const { id } = req.session
+    const html = `
+        <!DOCTYPE html>
+        <section id="main">
+                <h3>Account</h3>
+
+                <p>${id}</p>
+
+                <h4>DayPass</h4>
+                <p>Create unlimited clip compilations for the next 24 hours.</p>
+                <p><i>Name your price</i></p>
+
+                <form action="/api/daypass">
+                    <button>Purchase DayPass</button>
+                </form>
+
+                <h4>Pro</h4>
+                <p>Create unlimited clip compilations for the next year.</p>
+                <p>1 year subscription <i>$100</i></p>
+
+                
+                <form action="/api/pro">
+                    <button>Purchase Pro</button>
+                </form>
+
+        </section>
+    </html>`
+
+    res.send(html)
+})
+
+app.get('/api/sessionId', (req, res) => {
+    const { sessionId } = req.query
+
+    if (sessionId) {
+        // user is restoring a sessionId
+
+        
+    }
+
+    const id = req.sessionID
+
+    res.send(`<!DOCTYPE html><pre><code>${id}</code></pre></html>`)
 })
 
 app.get('/api/progress', (req, res) => {
@@ -116,7 +164,7 @@ app.get('/api/progress', (req, res) => {
 
     let jFormat = []
     jFormat.push('<!DOCTYPE html>')
-    jFormat.push('<section id="primary">')
+    jFormat.push('<section id="main">')
     jFormat.push('<h3>Compilations List</h3>')
     jFormat.push('<table>')
     jFormat.push('<tr>')
@@ -140,7 +188,7 @@ app.get('/api/progress', (req, res) => {
         jFormat.push('</tr>')
     }
     jFormat.push('</table>')
-    jFormat.push(`<a href="/api/progress#primary" target=htmz>refresh</a>`)
+    jFormat.push(`<a href="/api/progress#main" target=htmz>refresh</a>`)
     jFormat.push('</section>')
     jFormat.push('</html>')
 

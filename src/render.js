@@ -148,7 +148,7 @@ export async function combineClips(argv) {
       let clipFileName = getClipAbsoluteFileName(directory, clipInfo.id)
       console.log(`${clipFileName}`)
       let { duration } = await getVideoProbe(clipFileName);
-      console.info(`clipFileName:${clipFileName}, duration:${duration}`);
+      console.info(`clipFileName=${clipFileName}, duration:${duration}`);
       let layer = configureEditlyLayer(duration, clipInfo, clipFileName)
       clipsSpecification.push(layer);
     };

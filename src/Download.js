@@ -4,7 +4,7 @@ import { ClientCredentialsAuthProvider } from 'twitch-auth'
 import { DateTime } from "luxon"
 import path from 'path'
 import YTDlpWrap from 'yt-dlp-wrap';
-import { mkdir, writeFile } from 'fs/promises'
+import { writeFile } from 'fs/promises'
 import { NotEnoughClips } from './errors.js'
 import { dirname } from 'path'
 import { fileURLToPath } from 'url'
