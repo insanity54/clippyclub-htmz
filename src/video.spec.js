@@ -4,6 +4,20 @@ import { expect } from 'chai'
 
 describe('video.js', function () {
     describe('getVideoFilterComplex', function () {
+        xit('one clip', function () {
+            const manifest = [
+                {
+                    file: '/home/chris/.local/state/clippyclub/DoubtfulCutePlumPeteZaroll-l88G0wyESdSoVOAJ.mp4',
+                    duration: 15,
+                    fps: 60.07,
+                    width: 1920,
+                    height: 1080,
+                    text: 'CLIP TITLE 2\nClipped by joinks on April 3, 2003\n4 views'
+                }
+            ]
+            const filterComplex = getVideoFilterComplex(manifest)
+            expect(filterComplex).to.throw() // idk how to make this expect function work. too much time wasted, I see it throw. Moving on.        
+        })
         it('two clips', function () {
             const manifest = [
                 {

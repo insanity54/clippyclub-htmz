@@ -1,10 +1,12 @@
-# Clippy Club
+# Clipstr Club
 
 ## design requirements
 
     1. Must work
     2. Must be fast
     3. Must make money
+    4. Must exist in a single git repository
+    5. K.I.S.S.
 
 
 ## reference

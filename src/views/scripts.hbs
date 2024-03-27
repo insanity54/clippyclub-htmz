@@ -1,0 +1,23 @@
+
+
+<script>
+    function htmz(frame) {
+
+
+        // ---------------------------------8<-----------------------------------
+        // Repeat GETs
+        // ----------------------------------------------------------------------
+        // This extension clears the iframe URL for a fresh start on next load
+        if (frame.contentWindow.location.href === "about:blank") return;
+        // --------------------------------->8-----------------------------------
+        setTimeout(() => {
+            document
+                .querySelector(frame.contentWindow.location.hash || null)
+                ?.replaceWith(...frame.contentDocument.body.children);
+            // ---------------------------------8<-----------------------------------
+            frame.contentWindow.location.replace("about:blank");
+            // --------------------------------->8-----------------------------------
+        });
+    }
+</script>
+<iframe hidden="" name="htmz" onload="window.htmz(this)"></iframe>

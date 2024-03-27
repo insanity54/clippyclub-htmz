@@ -1,0 +1,15 @@
+Dockerfile
+*.dockerfile
+.dockerignore
+.gitignore
+*~
+node_modules
+npm-debug.log
+README.md
+.git
+LICENSE
+.nvmrc
+app.json
+.env
+.envrc
+.vscode

@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-pod
+  labels:
+    app.kubernetes.io/name: web-pod
+spec:
+  containers:
+    - name: web
+      image: clipstrclub/web
+      env:
+        - name: PORT
+          value: '4000'
+        - name: EXPRESS_SESSION_SECRET
+          valueFrom:
+            secretKeyRef: 
+              name: secretkv
+              key: taco
+        # - name: TWITCH_CLIENT_ID
+        #   valueFrom:
+        #     secretKeyRef: 
+        #       name: env
+        #       value: twitchClientId
+        # - name: TWITCH_CLIENT_SECRET
+        #   valueFrom:
+        #     secretKeyRef: 
+        #       name: env
+        #       value: twitchClientSecret
+        - name: GUMROAD_CLIENT_ID
+        - name: GUMROAD_CLIENT_SECRET
+        - name: SESSION_SECRET
+        - name: SITE_URL
+          value: "{{ .Values.siteUrl }}"
+      ports:
+        - containerPort: 4000
+      resources: {}
+  restartPolicy: OnFailure

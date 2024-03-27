@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+{{>head}}
+{{>logo}}
+<section id="main">
+    <h3>Account</h3>
+
+    <p>Welcome, {{ username }}</p>
+
+    <h4>Account Links</h4>
+
+    {{#each accounts}}
+        {{#if isLinked}}
+            <p>✅ {{name}} linked.</p>
+        {{else}}
+            <p><a href="{{loginUrl}}">Link {{name}} account</a></p>
+        {{/if}}
+    {{/each}}
+
+
+
+    <h4>Membership</h4>
+    <p>Members get access to unlimited clip compilations.</p>
+
+
+    {{#if isMember}}
+        <blockquote><p>There are $days left in your membership.</p></blockquote>
+
+    {{else}}
+        <blockquote><p>You are not a member, yet.</p></blockquote>
+
+        <p>Please choose one of the following options.</p>
+
+        <div class="gumroad">
+            <b><a href="https://clipstrclub.gumroad.com/l/membership">Join clipstr.club via Gumroad</a></b>
+            <p><i>includes 1 week free trial</i></p>
+        </div>
+
+        {{!-- <div class="crypto">
+            <b><a href="">Join clipstr.club via NOWPayments</a></b>
+            <p><i>Name your price</i></p>
+        </div> --}}
+    {{/if}}
+
+
+
+    <br />
+
+
+
+
+
+</section>
+<hr />
+{{>sitemap}}
+{{>scripts}}
+
+</html>

@@ -1,0 +1,60 @@
+repositories:
+  - name: jetstack
+    url: https://charts.jetstack.io
+
+  - name: vultr
+    url: https://vultr.github.io/helm-charts
+
+  - name: hashicorp
+    url: https://helm.releases.hashicorp.com
+
+
+releases:
+
+  - name: vault-secrets-operator
+    chart: hashicorp/vault
+    namespace: vault-secrets-operator-system
+    values:
+      - defaultVaultConnection:
+        enabled: true
+        address: "https://comples.sbtp.xyz"
+        skipTLSVerify: false
+    #   - defaultVaultConnection:
+    #     enabled: true
+    #     address: "https://comples.sbtp.xyz"
+    #     skipTLSVerify: false
+    #   - controller:
+    #     manager:
+    #       clientCache:
+    #         persistenceModel: direct-encrypted
+    #         storageEncryption:
+    #           enabled: true
+    #           mount: demo-auth-mount
+    #           keyName: vso-client-cache
+    #           transitMount: demo-transit
+    #           kubernetes:
+    #             role: auth-role-operator
+    #             serviceAccount: demo-operator
+
+  # - name: vault
+  #   chart: hashicorp/vault
+  #   values: 
+  #     - global:
+  #         externalVaultAddr: https://external-vault:80
+  #     - injector:
+  #         enabled: 'false' # we use Vault Secrets Operator instead
+
+  - name: cert-manager
+    namespace: cert-manager
+    chart: jetstack/cert-manager
+
+  # - name: cert-manager-webhook-vultr
+  #   namespace: cert-manager
+  #   chart: vultr/cert-manager-webhook-vultr
+
+
+  - name: clipstrclub
+    namespace: clipstrclub
+    chart: charts/clipstrclub
+    values:
+      - charts/clipstrclub/values-prod.yaml

@@ -2,7 +2,7 @@ import Database from 'better-sqlite3'
 import { dataPath, dbPath } from "./const.js"
 import { mkdir } from 'fs/promises'
 
-async function main() {
+export async function initDb() {
 
     await mkdir(dataPath, { recursive: true })
     
@@ -22,6 +22,15 @@ async function main() {
             session TEXT
         );
     `);
+    db.exec(`
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                twitchId TEXT,
+                gumroadId TEXT,
+                page TEXT
+            );
+    `);
+
 
     // Generate dummy data
     const dummyData = [
@@ -41,7 +50,9 @@ async function main() {
         }
     })();
 
-    db.close();
+    return {
+        "class": Database,
+        "connection": db
+    }
 }
 
-main();

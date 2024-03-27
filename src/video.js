@@ -6,7 +6,6 @@ import ffprobe from 'ffprobe'
 import { statePath } from './const.js'
 import { join, dirname } from 'path'
 import { readFile, writeFile } from 'fs/promises'
-import { tmpdir } from 'os'
 import { fileURLToPath } from 'url'
 import { RenderAudioFailed, RenderCombineFailed, RenderTitlesFailed, RenderVideoFailed, RenderTitlesMergeFailed } from './errors.js'
 
@@ -15,24 +14,24 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const fontfile = join(__dirname, '../assets/PatuaOne-Regular.ttf')
 
 
-export async function getVideoProbe (fileName) {
+export async function getVideoProbe(fileName) {
     let info = await ffprobe(fileName, { path: 'ffprobe' })
     let videoStream = info.streams.find((s) => s.codec_type === 'video')
     let output = {
-      fps: videoStream.r_frame_rate.split('/')[0],
-      width: videoStream.width,
-      height: videoStream.height,
-      duration: videoStream.duration
+        fps: videoStream.r_frame_rate.split('/')[0],
+        width: videoStream.width,
+        height: videoStream.height,
+        duration: videoStream.duration
     };
     return output
-  }
+}
 
-export function getClipFilePath (clipId) {
+export function getClipFilePath(clipId) {
     if (!clipId) throw new Error('clipId passed to getClipFilePath was undefined')
     return join(statePath, `${clipId}.mp4`)
 }
 
-export function getTitleTextFilePath (clipId) {
+export function getTitleTextFilePath(clipId) {
     if (!clipId) throw new Error('clipId passed to getTitleTextFilePath was undefined')
     return join(statePath, `${clipId}_text.txt`)
 }
@@ -63,7 +62,7 @@ export function getTitleTextFilePath (clipId) {
  *   }
  * ]
  */
-async function createCompilationManifest (clipSpec) {
+async function createCompilationManifest(clipSpec) {
     let compilationManifest = []
     for (const clip of clipSpec) {
         const probe = await getVideoProbe(getClipFilePath(clip.id));
@@ -87,13 +86,13 @@ async function createCompilationManifest (clipSpec) {
     return compilationManifest
 }
 
-async function loadClipSpecFile (manifestFile) {
+async function loadClipSpecFile(manifestFile) {
     const data = await readFile(manifestFile, { encooding: 'utf-8' });
     const json = JSON.parse(data)
     return json
 }
 
-async function addProbeDataToManifest (manifest) {
+async function addProbeDataToManifest(manifest) {
     // get duration of clips
     let manifestWithProbeData = []
     for (const clip of manifest) {
@@ -116,7 +115,7 @@ function generateXfades(manifest, xDur = 0.2, transition = 'diagtr') {
 
     for (let i = 0; i < manifest.length - 1; i++) {
         const clipDuration = manifest[i].duration;
-        
+
         offset += (clipDuration - xDur);
         xfades.push({
             inputA: i === 0 ? 'v0' : `x${i - 1}`,
@@ -124,7 +123,7 @@ function generateXfades(manifest, xDur = 0.2, transition = 'diagtr') {
             transition: transition,
             duration: xDur,
             offset: parseFloat(offset).toFixed(2),
-            output: i === manifest.length-2 ? 'video' : `x${i}`
+            output: i === manifest.length - 2 ? 'video' : `x${i}`
         });
     }
 
@@ -137,7 +136,7 @@ function generateAfades(manifest, aDur = 0.2) {
 
     for (let i = 0; i < manifest.length - 1; i++) {
         const clipDuration = manifest[i].duration;
-        
+
         offset += (clipDuration - aDur);
         afades.push({
             inputA: i === 0 ? 'a0' : `x${i - 1}`,
@@ -146,7 +145,7 @@ function generateAfades(manifest, aDur = 0.2) {
             curve2: 'tri',
             duration: aDur,
             offset: parseFloat(offset).toFixed(2),
-            output: i === manifest.length-2 ? 'audio' : `x${i}`
+            output: i === manifest.length - 2 ? 'audio' : `x${i}`
         });
     }
 
@@ -174,7 +173,7 @@ function generateAfadeString(afades) {
 export function getAudioFilterComplex(manifest) {
     let lines = []
     // atrim
-    for (let i = 0; i<manifest.length; i++) {
+    for (let i = 0; i < manifest.length; i++) {
         lines.push(`[${i}]atrim=start=0:end=${manifest[i].duration}[a${i}];`)
     }
     const afades = generateAfades(manifest);
@@ -184,8 +183,9 @@ export function getAudioFilterComplex(manifest) {
 
 export function getVideoFilterComplex(manifest) {
     let lines = []
+    if (manifest.length === 1) throw new Error('this function is only useful for manifests with >=2 clips');
     // settb
-    for (let i = 0; i<manifest.length; i++) {
+    for (let i = 0; i < manifest.length; i++) {
         lines.push(`[${i}]settb=AVTB[v${i}];`)
     }
     const xfades = generateXfades(manifest);
@@ -235,7 +235,7 @@ export function getVideoFilterComplex(manifest) {
 export function getTitleVideoFilterComplex(manifest) {
     let lines = []
     // settb
-    for (let i = 0; i<manifest.length; i++) {
+    for (let i = 0; i < manifest.length; i++) {
         lines.push(`[${i}]settb=AVTB[v${i}];`)
     }
     const xfades = generateXfades(manifest, 1, 'fade');
@@ -342,174 +342,146 @@ export async function combine(manifest, outputPath) {
     }
 
     const timestamp = new Date().valueOf()
-    const tmpVideoOutputPath = join(tmpdir(), `${timestamp}.nut`)
-    const tmpAudioOutputPath = join(tmpdir(), `${timestamp}.wav`)
-    const tmpTitlesOutputPaths = manifest.map((c, i) => join(tmpdir(), `${timestamp}_title${i}.nut`))
-    const tmpAllTitlesOutputPath = join(tmpdir(), `${timestamp}_titles.mp4`)
+    const tmpVideoOutputPath = join(statePath, `${timestamp}_video.nut`)
+    const tmpAudioOutputPath = join(statePath, `${timestamp}_audio.wav`)
+    const tmpTitlesOutputPaths = manifest.map((c, i) => join(statePath, `${timestamp}_title${i}.nut`))
+    const tmpAllTitlesOutputPath = join(statePath, `${timestamp}_titles.nut`)
 
     console.log(`video:${tmpVideoOutputPath}, audio:${tmpAudioOutputPath}`)
 
 
-        console.log(manifest)
+    console.log(manifest)
 
 
-        try {
-            console.log(`>> generate titles videos`)
-            for (const [i, clip] of Object.entries(manifest)) {
-                console.log(`following is the clip ${i}`)
-                console.log(clip)
-                const textFilePath = join(statePath, `${timestamp}_title${i}.txt`)
-                await writeFile(textFilePath, clip.text, { encoding: 'utf8' })
+    try {
+        console.log(`>> generate titles videos`)
+        for (const [i, clip] of Object.entries(manifest)) {
+            console.log(`following is the clip ${i}`)
+            console.log(clip)
+            const textFilePath = join(statePath, `${timestamp}_title${i}.txt`)
+            await writeFile(textFilePath, clip.text, { encoding: 'utf8' })
 
-                const filterGraph = [
-                    `[0]format=rgba,colorchannelmixer=aa=0,trim=0:${parseFloat(clip.duration).toFixed(2)}[blue];`,
-                    '[1]format=rgba,colorchannelmixer=aa=0.5[black];',
-                    '[blue]split[blue0][blue1];',
-                    '[blue0][black]',
-                        `overlay=y='if(gte(t,${parseFloat(clip.duration).toFixed(2)}),h,5*h/7)':`,
-                        'repeatlast=0:',
-                        'shortest=1,',
-                    `drawtext=textfile=${textFilePath}:`,
-                        `alpha='if(gte(t,${Math.min(6,clip.duration)}),0,0.8)':`,
-                        'fontcolor=white:',
-                        'fontsize=h/18:',
-                        `fontfile=${fontfile}:`,
-                        'y=h-h/18-th:',
-                        "x='if(gte(t,3),h/18,h/18*(1-pow(1-t/3,4)))',",
-                    `trim=0:${parseFloat(clip.duration).toFixed(2)}[title];`,
-                    '[blue1][title]xfade=transition=fade:duration=1[video];',
-                ]
-                await execa('ffmpeg', [
-                    '-f', 'lavfi', 
-                    '-i', `color=color=blue:size=${manifest.at(0).width}x${manifest.at(0).height}:rate=${manifest.at(0).fps}`,
-                    '-f', 'lavfi', 
-                    '-i', `color=color=black:size=${manifest.at(0).width}x${manifest.at(0).height}:rate=${manifest.at(0).fps}`,
-                    '-filter_complex', filterGraph.join(''),
-                    '-map', '[video]',
-                    '-c:v', 'rawvideo',
-                    '-fps_mode:1', 'cfr',
-                    '-pix_fmt', 'yuva420p',
-                    tmpTitlesOutputPaths[i]
-                ], {
-                    stdio: 'inherit' 
-                })
-                console.log(`>> written to ${tmpTitlesOutputPaths[i]}`)
-            }
-
-
-        } catch (e) {
-            throw new RenderTitlesFailed(e)
-        }
-
-
-        console.log('>> merge together the individual title clips')
-        try {
-            let titleClipsManifest = []
-            for (const [i, clip] of Object.entries(manifest)) {
-                titleClipsManifest.push({
-                    duration: clip.duration,
-                    width: clip.width,
-                    height: clip.height,
-                    text: '',
-                    file: tmpTitlesOutputPaths[i]
-                })
-            }
+            const filterGraph = [
+                `color=color=0x00000000:size=${manifest.at(0).width}x${manifest.at(0).height}:rate=${manifest.at(0).fps},trim=0:${parseFloat(clip.duration).toFixed(2)}[transparency];`,
+                `color=color=0x0000004D:size=${manifest.at(0).width}x${manifest.at(0).height}:rate=${manifest.at(0).fps},trim=0:${Math.min(6, clip.duration)}[black];`,
+                '[transparency]split[transparency0][transparency1];',
+                '[transparency0][black]',
+                `overlay=y='if(gte(t,${parseFloat(clip.duration).toFixed(2)}),h,5*h/7)':`,
+                'repeatlast=0:',
+                'shortest=0,',
+                `drawtext=textfile=${textFilePath}:`,
+                `alpha='if(gte(t,${Math.min(6, clip.duration)}),0,0.8)':`,
+                'fontcolor=white:',
+                'fontsize=h/18:',
+                `fontfile=${fontfile}:`,
+                'y=h-h/18-th:',
+                "x='if(gte(t,3),h/18,h/18*(1-pow(1-t/3,4)))',",
+                `trim=0:${parseFloat(clip.duration).toFixed(2)}[title];`,
+                '[transparency1][title]xfade=transition=fade:duration=1[video];',
+            ]
             await execa('ffmpeg', [
-                // '-r', '60',
-                ...titleClipsManifest.flatMap((c) => ['-i', c.file]),
-                '-filter_complex', getVideoFilterComplex(titleClipsManifest),
-                '-fps_mode:1', 'cfr', // we set video output stream 1 to keep framerate constant so later we can merge audio in-sync
-                '-pix_fmt', 'yuva420p',
+                '-filter_complex', filterGraph.join(''),
+                '-map', '[video]',
                 '-c:v', 'ffv1',
-                // '-b:v', '1M', // @todo just for testing, we use a low bitrate to keep the encode faster. in prod we must remove 
-                '-map', '[video]',
-                tmpAllTitlesOutputPath
+                '-fps_mode:1', 'cfr',
+                '-pix_fmt', 'yuva420p',
+                tmpTitlesOutputPaths[i]
             ])
-        } catch (e) {
-            throw new RenderTitlesMergeFailed(e)
+            console.log(`>> written to ${tmpTitlesOutputPaths[i]}`)
         }
 
 
-        // generate video
-        // @reference https://romander.github.io/ffmpeg-script-generator/ 
-        console.log(`>> generate clips video`)
-        try {
-            await execa('ffmpeg', [
-                // '-r', '60',
-                ...manifest.flatMap((c) => ['-i', c.file]),
-                '-filter_complex', getVideoFilterComplex(manifest),
-                '-fps_mode:1', 'cfr', // we set video output stream 1 to keep framerate constant so later we can merge audio in-sync
-                '-pix_fmt', 'yuv420p',
-                // '-b:v', '1M', // @todo just for testing, we use a low bitrate to keep the encode faster. in prod we must remove 
-                '-map', '[video]',
-                tmpVideoOutputPath
-            ])
-            // ], { stdio: 'inherit' })
-        } catch (e) {
-            throw new RenderVideoFailed(e)
+    } catch (e) {
+        throw new RenderTitlesFailed(e)
+    }
+
+
+    console.log('>> merge together the individual title clips')
+    try {
+        let titleClipsManifest = []
+        for (const [i, clip] of Object.entries(manifest)) {
+            titleClipsManifest.push({
+                duration: clip.duration,
+                width: clip.width,
+                height: clip.height,
+                text: '',
+                file: tmpTitlesOutputPaths[i]
+            })
         }
-
-        // ffmpeg -y \
-        // -f lavfi -i color=color=blue:size=1920x1080:duration=10 \
-        // -f lavfi -i color=color=black:size=1920x1080 \
-        // -filter_complex "
-        //   [0]trim=0:10[blue];
-        //   [1]format=rgba,colorchannelmixer=aa=0.5[black];
-        //   [blue]split[blue0][blue1];
-        //   [blue0][black]
-        //     overlay=y='if(gte(t,6),h,5*h/7)':
-        //       repeatlast=0:
-        //       shortest=1,
-        //     drawtext=textfile=test.txt:
-        //       alpha='if(gte(t,6),0,0.8)':
-        //       fontsize=h/18:fontcolor=white:
-        //       fontfile=/home/chris/Documents/clippyclub-htmz/assets/PatuaOne-Regular.ttf:
-        //       y=h-h/18-th:
-        //       x='if(gte(t,3),h/18,h/18*(1-pow(1-t/3,4)))',
-        //     trim=0:10[title];
-        //   [blue1][title]xfade=transition=fade:duration=1[video];
-        // " \
-        // -map '[video]' \
-        // -pix_fmt yuv420p \
-        // ~/Downloads/comp16-test.mp4 \
-        // && xdg-open ~/Downloads/comp16-test.mp4
-    
+        await execa('ffmpeg', [
+            // '-r', '60',
+            ...titleClipsManifest.flatMap((c) => ['-i', c.file]),
+            '-filter_complex', getVideoFilterComplex(titleClipsManifest),
+            '-fps_mode:1', 'cfr', // we set video output stream 1 to keep framerate constant so later we can merge audio in-sync
+            '-pix_fmt', 'yuva420p',
+            '-c:v', 'ffv1',
+            '-map', '[video]',
+            tmpAllTitlesOutputPath
+        ])
+    } catch (e) {
+        throw new RenderTitlesMergeFailed(e)
+    }
 
 
-        // generate audio
-        try {
-            console.log(`>> generate audio`)
-            await execa('ffmpeg', [
-                ...manifest.flatMap((c) => ['-i', c.file]),
-                '-filter_complex', getAudioFilterComplex(manifest),
-                '-fps_mode:1', 'cfr', // keep framerate constant so we can merge audio + video in-sync
-                '-map', '[audio]',
-                tmpAudioOutputPath
-            ], {stdio: 'inherit' })
-        } catch (e) {
-            throw new RenderAudioFailed(e)
-        }
+    // generate video
+    // @reference https://romander.github.io/ffmpeg-script-generator/ 
+    console.log(`>> generate clips video`)
+    try {
+        await execa('ffmpeg', [
+            // '-r', '60',
+            ...manifest.flatMap((c) => ['-i', c.file]),
+            '-filter_complex', getVideoFilterComplex(manifest),
+            '-fps_mode:1', 'cfr', // we set video output stream 1 to keep framerate constant so later we can merge audio in-sync
+            '-pix_fmt', 'yuv420p',
+            '-map', '[video]',
+            tmpVideoOutputPath
+        ])
+        // ], { stdio: 'inherit' })
+    } catch (e) {
+        throw new RenderVideoFailed(e)
+    }
 
-        try {
-            // merge video and audio
-            console.log(`>> merge video with titles with audio`)
-            await execa('ffmpeg', [
-                '-y',
-                '-i', tmpVideoOutputPath,
-                '-i', tmpAllTitlesOutputPath,
-                '-i', tmpAudioOutputPath,
-                '-complex_filter', '[0:v][1:v]overlay[vid];',
-                '-map', '[vid]',
-                '-map', '[2:a]',
-                '-c:v', 'libx264',
-                '-c:a', 'aac',
-                outputPath
-            ])
-            // ], {stdio: 'inherit' })
-        } catch (e)  {
-            throw new RenderCombineFailed(e)
-        }
 
+
+
+    // generate audio
+    try {
+        console.log(`>> generate audio`)
+        await execa('ffmpeg', [
+            ...manifest.flatMap((c) => ['-i', c.file]),
+            '-filter_complex', getAudioFilterComplex(manifest),
+            '-fps_mode:1', 'cfr', // keep framerate constant so we can merge audio + video in-sync
+            '-map', '[audio]',
+            tmpAudioOutputPath
+        ])
+        // , {stdio: 'inherit' })
+    } catch (e) {
+        throw new RenderAudioFailed(e)
+    }
+
+    try {
+        // merge video and audio
+        console.log(`>> merge video with titles with audio`)
+        await execa('ffmpeg', [
+            '-y',
+            '-i', tmpVideoOutputPath,
+            '-i', tmpAllTitlesOutputPath,
+            '-i', tmpAudioOutputPath,
+            '-filter_complex', '[0:v][1:v]overlay[vid];',
+            '-map', '[vid]',
+            '-map', '2:a',
+            '-c:v', 'libx264',
+            '-c:a', 'aac',
+            outputPath
+        ])
+        // , {stdio: 'inherit' })
+
+
+    } catch (e) {
+        throw new RenderCombineFailed(e)
+    }
+
+    console.log(`>> done. ${outputPath}`)
 
 }
 

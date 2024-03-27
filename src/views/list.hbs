@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+{{>head}}
+{{>logo}}
+<section id="main">
+    <h3>Compilations List</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Channel</th>
+                <th>Count</th>
+                <th>Method</th>
+                <th>Range</th>
+                <th>Status</th>
+                <th>URL</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{#each compilations}}
+            <tr>
+                <td>{{this.id}}</td>
+                <td>{{this.channel}}</td>
+                <td>{{this.count}}</td>
+                <td>{{this.method}}</td>
+                <td>{{this.range}}</td>
+                <td>{{this.status}}</td>
+                <td>{{this.url}}</td>
+            </tr>
+            {{/each}}
+        </tbody>
+    </table>
+    <a href="/list#body" target="htmz">Refresh</a>
+    {{>scripts}}
+</section>
+
+<hr />
+{{>sitemap}}
+
+</html>
